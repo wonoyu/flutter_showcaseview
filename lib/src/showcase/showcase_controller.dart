@@ -113,6 +113,10 @@ class ShowcaseController {
   /// Recalculates sizes, updates controller data, and triggers overlay updates.
   /// mounted check ensure the context is still valid before proceeding.
   /// * [context] The BuildContext of the showcase widget
+  ///
+  /// When the root widget size is calculated, the [onRootWidgetSizeCalculated]
+  /// callback is triggered with the new size. This allows for custom handling
+  /// of size changes, such as adjusting layouts or animations.
   void recalculateRootWidgetSize(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
@@ -126,6 +130,7 @@ class ShowcaseController {
       showCaseWidgetState.updateOverlay?.call(
         showCaseWidgetState.isShowcaseRunning,
       );
+      config.onRootWidgetSizeCalculated?.call(rootWidgetSize);
     });
   }
 
@@ -172,6 +177,14 @@ class ShowcaseController {
   /// Includes target highlight, tooltip, and optional floating action widget.
   /// Creates different widget sets based on whether scrolling is in progress.
   ///
+  /// The overlay consists of:
+  /// - A target highlight widget that shows where the showcase is focused
+  /// - A tooltip that can be either custom widgets or text-based
+  /// - Optional floating action widgets for additional interactions
+  ///
+  /// During scrolling, only shows a loading indicator widget.
+  /// When not scrolling, builds the full showcase overlay with all components.
+  ///
   /// * [offset] The position offset of the target
   /// * [size] The size of the target
   /// * [rectBound] The target's bounding rectangle
@@ -202,47 +215,79 @@ class ShowcaseController {
               disableDefaultChildGestures: config.disableDefaultTargetGestures,
               targetPadding: config.targetPadding,
             ),
-            ToolTipWidget(
-              key: ValueKey(id),
-              title: config.title,
-              titleTextAlign: config.titleTextAlign,
-              description: config.description,
-              descriptionTextAlign: config.descriptionTextAlign,
-              titleAlignment: config.titleAlignment,
-              descriptionAlignment: config.descriptionAlignment,
-              titleTextStyle: config.titleTextStyle,
-              descTextStyle: config.descTextStyle,
-              container: config.container,
-              tooltipBackgroundColor: config.tooltipBackgroundColor,
-              textColor: config.textColor,
-              showArrow: config.showArrow,
-              onTooltipTap:
-                  config.disposeOnTap == true || config.onToolTipClick != null
-                      ? _getOnTooltipTap
-                      : null,
-              tooltipPadding: config.tooltipPadding,
-              disableMovingAnimation: config.disableMovingAnimation ??
-                  showCaseWidgetState.disableMovingAnimation,
-              disableScaleAnimation: (config.disableScaleAnimation ??
-                      showCaseWidgetState.disableScaleAnimation) ||
-                  config.container != null,
-              movingAnimationDuration: config.movingAnimationDuration,
-              tooltipBorderRadius: config.tooltipBorderRadius,
-              scaleAnimationDuration: config.scaleAnimationDuration,
-              scaleAnimationCurve: config.scaleAnimationCurve,
-              scaleAnimationAlignment: config.scaleAnimationAlignment,
-              tooltipPosition: config.tooltipPosition,
-              titlePadding: config.titlePadding,
-              descriptionPadding: config.descriptionPadding,
-              titleTextDirection: config.titleTextDirection,
-              descriptionTextDirection: config.descriptionTextDirection,
-              toolTipSlideEndDistance: config.toolTipSlideEndDistance,
-              toolTipMargin: config.toolTipMargin,
-              tooltipActionConfig: _getTooltipActionConfig(),
-              tooltipActions: _getTooltipActions(),
-              targetPadding: config.targetPadding,
-              showcaseController: this,
-            ),
+            if (config.descriptionWidget != null && config.titleWidget != null)
+              ToolTipWidget.custom(
+                key: ValueKey(id),
+                titleWidget: config.titleWidget,
+                descriptionWidget: config.descriptionWidget,
+                tooltipBackgroundColor: config.tooltipBackgroundColor,
+                textColor: config.textColor,
+                showArrow: config.showArrow,
+                onTooltipTap:
+                    config.disposeOnTap == true || config.onToolTipClick != null
+                        ? _getOnTooltipTap
+                        : null,
+                tooltipPadding: config.tooltipPadding,
+                disableMovingAnimation: config.disableMovingAnimation ??
+                    showCaseWidgetState.disableMovingAnimation,
+                disableScaleAnimation: (config.disableScaleAnimation ??
+                        showCaseWidgetState.disableScaleAnimation) ||
+                    config.container != null,
+                movingAnimationDuration: config.movingAnimationDuration,
+                tooltipBorderRadius: config.tooltipBorderRadius,
+                scaleAnimationDuration: config.scaleAnimationDuration,
+                scaleAnimationCurve: config.scaleAnimationCurve,
+                scaleAnimationAlignment: config.scaleAnimationAlignment,
+                tooltipPosition: config.tooltipPosition,
+                toolTipSlideEndDistance: config.toolTipSlideEndDistance,
+                toolTipMargin: config.toolTipMargin,
+                tooltipActionConfig: _getTooltipActionConfig(),
+                tooltipActions: _getTooltipActions(),
+                targetPadding: config.targetPadding,
+                showcaseController: this,
+              )
+            else
+              ToolTipWidget(
+                key: ValueKey(id),
+                title: config.title,
+                titleTextAlign: config.titleTextAlign,
+                description: config.description,
+                descriptionTextAlign: config.descriptionTextAlign,
+                titleAlignment: config.titleAlignment,
+                descriptionAlignment: config.descriptionAlignment,
+                titleTextStyle: config.titleTextStyle,
+                descTextStyle: config.descTextStyle,
+                container: config.container,
+                tooltipBackgroundColor: config.tooltipBackgroundColor,
+                textColor: config.textColor,
+                showArrow: config.showArrow,
+                onTooltipTap:
+                    config.disposeOnTap == true || config.onToolTipClick != null
+                        ? _getOnTooltipTap
+                        : null,
+                tooltipPadding: config.tooltipPadding,
+                disableMovingAnimation: config.disableMovingAnimation ??
+                    showCaseWidgetState.disableMovingAnimation,
+                disableScaleAnimation: (config.disableScaleAnimation ??
+                        showCaseWidgetState.disableScaleAnimation) ||
+                    config.container != null,
+                movingAnimationDuration: config.movingAnimationDuration,
+                tooltipBorderRadius: config.tooltipBorderRadius,
+                scaleAnimationDuration: config.scaleAnimationDuration,
+                scaleAnimationCurve: config.scaleAnimationCurve,
+                scaleAnimationAlignment: config.scaleAnimationAlignment,
+                tooltipPosition: config.tooltipPosition,
+                titlePadding: config.titlePadding,
+                descriptionPadding: config.descriptionPadding,
+                titleTextDirection: config.titleTextDirection,
+                descriptionTextDirection: config.descriptionTextDirection,
+                toolTipSlideEndDistance: config.toolTipSlideEndDistance,
+                toolTipMargin: config.toolTipMargin,
+                tooltipActionConfig: _getTooltipActionConfig(),
+                tooltipActions: _getTooltipActions(),
+                targetPadding: config.targetPadding,
+                showcaseController: this,
+              ),
             if (_getFloatingActionWidget != null) _getFloatingActionWidget!,
           ];
   }
@@ -261,6 +306,13 @@ class ShowcaseController {
   ///
   /// This method is typically called internally by the showcase system but
   /// can also be called manually to force a recalculation of showcase elements.
+  ///
+  /// When the showcase starts, it triggers [onCurrentShowcaseStarted] callback with:
+  /// - The currently active showcase key via [getCurrentActiveShowcaseKey]
+  /// - A list of all showcase IDs in the sequence via [ids]
+  ///
+  /// This allows tracking showcase progress and implementing custom behaviors
+  /// when specific showcases begin.
   void startShowcase() {
     if (!showCaseWidgetState.enableShowcase) return;
 
@@ -275,6 +327,10 @@ class ShowcaseController {
       padding: config.targetPadding,
       screenWidth: size.width,
       screenHeight: size.height,
+    );
+    config.onCurrentShowcaseStarted?.call(
+      showCaseWidgetState.getCurrentActiveShowcaseKey,
+      showCaseWidgetState.ids,
     );
   }
 

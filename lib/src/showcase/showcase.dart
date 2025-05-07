@@ -297,6 +297,40 @@ class Showcase extends StatefulWidget {
   /// for this showcase.
   final bool? enableAutoScroll;
 
+  /// A custom widget to use as the title instead of the default text title.
+  ///
+  /// When provided, this widget will be used instead of rendering the [title] text.
+  /// This gives you more flexibility in customizing how the title appears.
+  final Widget? titleWidget;
+
+  /// A custom widget to use as the description instead of the default text description.
+  ///
+  /// When provided, this widget will be used instead of rendering the [description] text.
+  /// This gives you more flexibility in customizing how the description appears.
+  final Widget? descriptionWidget;
+
+  /// Callback that is triggered when the size of the root widget is calculated.
+  ///
+  /// This callback provides the [Size] of the root widget as a parameter.
+  /// It can be useful for scenarios where you need to know the dimensions
+  /// of the showcase root widget, such as for custom positioning or animations.
+  final ValueChanged<Size?>? onRootWidgetSizeCalculated;
+
+  /// Callback that is triggered when a showcase starts displaying.
+  ///
+  /// This callback provides:
+  /// - [currentShowCaseKey] The GlobalKey of the currently displaying showcase
+  /// - [showcaseKeys] List of all GlobalKeys for showcases in the queue
+  ///
+  /// This can be useful for:
+  /// - Tracking which showcase is currently being displayed
+  /// - Accessing the full queue of pending showcases
+  /// - Implementing custom logic when showcases transition
+  final void Function(
+    GlobalKey<State<StatefulWidget>>? currentShowCaseKey,
+    List<GlobalKey<State<StatefulWidget>>>? showcaseKeys,
+  )? onCurrentShowcaseStarted;
+
   /// Highlights a specific widget on the screen with an informative tooltip.
   ///
   /// This widget helps you showcase specific parts of your UI by drawing an
@@ -416,10 +450,14 @@ class Showcase extends StatefulWidget {
     this.scrollAlignment = 0.5,
     this.enableAutoScroll,
     this.floatingActionWidget,
+    this.onRootWidgetSizeCalculated,
+    this.onCurrentShowcaseStarted,
   })  : height = null,
         width = null,
         container = null,
         showcaseKey = key,
+        titleWidget = null,
+        descriptionWidget = null,
         assert(
           overlayOpacity >= 0.0 && overlayOpacity <= 1.0,
           'overlay opacity must be between 0 and 1.',
@@ -518,6 +556,8 @@ class Showcase extends StatefulWidget {
     this.tooltipActionConfig,
     this.scrollAlignment = 0.5,
     this.enableAutoScroll,
+    this.onRootWidgetSizeCalculated,
+    this.onCurrentShowcaseStarted,
   })  : showArrow = false,
         onToolTipClick = null,
         scaleAnimationDuration = const Duration(milliseconds: 300),
@@ -542,6 +582,8 @@ class Showcase extends StatefulWidget {
         descriptionTextDirection = null,
         toolTipMargin = 14,
         showcaseKey = key,
+        titleWidget = null,
+        descriptionWidget = null,
         assert(
           overlayOpacity >= 0.0 && overlayOpacity <= 1.0,
           'overlay opacity must be between 0 and 1.',
@@ -557,6 +599,144 @@ class Showcase extends StatefulWidget {
         assert(
           onBarrierClick == null || disableBarrierInteraction == false,
           "can't use `onBarrierClick` & `disableBarrierInteraction` property at same time",
+        );
+
+  /// Creates a Showcase widget with custom title and description widgets.
+  ///
+  /// This constructor allows you to provide completely custom widgets for both
+  /// the title and description instead of using the default text-based ones.
+  /// This gives you maximum flexibility in designing how the showcase information
+  /// is displayed.
+  ///
+  /// **Required Parameters:**
+  /// * [key] - A unique key to identify this showcase
+  /// * [titleWidget] - Custom widget to use as the title
+  /// * [descriptionWidget] - Custom widget to use as the description
+  /// * [child] - The widget to be showcased
+  ///
+  /// **Optional Parameters:**
+  ///
+  /// **Appearance:**
+  /// * [targetShapeBorder] - Shape of the highlight around the target (default: rounded rectangle)
+  /// * [targetBorderRadius] - Border radius of the target highlight
+  /// * [overlayColor] - Color of the overlay (default: black45)
+  /// * [overlayOpacity] - Opacity of the overlay (default: 0.75)
+  /// * [tooltipBackgroundColor] - Background color of tooltip (default: white)
+  /// * [tooltipBorderRadius] - Border radius of the tooltip
+  /// * [showArrow] - Whether to show an arrow pointing to target (default: true)
+  /// * [tooltipPadding] - Padding inside the tooltip
+  /// * [targetPadding] - Padding around the target
+  ///
+  /// **Animation:**
+  /// * [movingAnimationDuration] - Duration of tooltip movement animation
+  /// * [disableMovingAnimation] - Whether to disable movement animation
+  /// * [disableScaleAnimation] - Whether to disable scale animation
+  /// * [scaleAnimationDuration] - Duration of scale animation
+  /// * [scaleAnimationCurve] - Curve for scale animation
+  /// * [scaleAnimationAlignment] - Alignment for scale animation
+  /// * [toolTipSlideEndDistance] - Distance for tooltip slide animation
+  ///
+  /// **Interaction:**
+  /// * [onTargetClick] - Callback when target is clicked
+  /// * [onTargetLongPress] - Callback when target is long pressed
+  /// * [onTargetDoubleTap] - Callback when target is double tapped
+  /// * [onToolTipClick] - Callback when tooltip is clicked
+  /// * [disposeOnTap] - Whether to dispose showcase on tap
+  /// * [disableDefaultTargetGestures] - Whether to disable default target gestures
+  /// * [onBarrierClick] - Callback when barrier is clicked
+  /// * [disableBarrierInteraction] - Whether to disable barrier interaction
+  ///
+  /// **Layout:**
+  /// * [tooltipPosition] - Position of tooltip relative to target
+  /// * [toolTipMargin] - Margin between tooltip and screen edges
+  /// * [tooltipActions] - Action buttons to show in tooltip
+  /// * [tooltipActionConfig] - Configuration for tooltip actions
+  /// * [scrollAlignment] - Alignment for auto-scrolling
+  /// * [enableAutoScroll] - Whether to enable auto-scrolling
+  /// * [floatingActionWidget] - Optional floating action widget
+  ///
+  /// **Callbacks:**
+  /// * [onRootWidgetSizeCalculated] - Called when root widget size is calculated
+  /// * [onCurrentShowcaseStarted] - Called when showcase starts
+  const Showcase.custom({
+    required GlobalKey key,
+    required this.descriptionWidget,
+    required this.child,
+    required this.titleWidget,
+    this.targetShapeBorder = const RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(8)),
+    ),
+    this.overlayColor = Colors.black45,
+    this.overlayOpacity = 0.75,
+    this.tooltipBackgroundColor = Colors.white,
+    this.textColor = Colors.black,
+    this.scrollLoadingWidget = Constants.defaultProgressIndicator,
+    this.showArrow = true,
+    this.onTargetClick,
+    this.disposeOnTap,
+    this.movingAnimationDuration = const Duration(milliseconds: 2000),
+    this.disableMovingAnimation,
+    this.disableScaleAnimation,
+    this.tooltipPadding =
+        const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+    this.onToolTipClick,
+    this.targetPadding = EdgeInsets.zero,
+    this.blurValue,
+    this.targetBorderRadius,
+    this.onTargetLongPress,
+    this.onTargetDoubleTap,
+    this.tooltipBorderRadius,
+    this.disableDefaultTargetGestures = false,
+    this.scaleAnimationDuration = const Duration(milliseconds: 300),
+    this.scaleAnimationCurve = Curves.easeIn,
+    this.scaleAnimationAlignment,
+    this.tooltipPosition,
+    this.onBarrierClick,
+    this.disableBarrierInteraction = false,
+    this.toolTipSlideEndDistance = 7,
+    this.toolTipMargin = 14,
+    this.tooltipActions,
+    this.tooltipActionConfig,
+    this.scrollAlignment = 0.5,
+    this.enableAutoScroll,
+    this.floatingActionWidget,
+    this.onRootWidgetSizeCalculated,
+    this.onCurrentShowcaseStarted,
+  })  : title = null,
+        titleAlignment = Alignment.center,
+        titlePadding = EdgeInsets.zero,
+        titleTextAlign = TextAlign.center,
+        titleTextDirection = TextDirection.ltr,
+        titleTextStyle = null,
+        container = null,
+        description = null,
+        descTextStyle = null,
+        descriptionAlignment = Alignment.center,
+        descriptionPadding = EdgeInsets.zero,
+        descriptionTextAlign = TextAlign.center,
+        descriptionTextDirection = TextDirection.ltr,
+        height = null,
+        width = null,
+        showcaseKey = key,
+        assert(
+          overlayOpacity >= 0.0 && overlayOpacity <= 1.0,
+          'overlay opacity must be between 0 and 1.',
+        ),
+        assert(
+          onTargetClick == null || disposeOnTap != null,
+          "`disposeOnTap` is required if you're using `onTargetClick`",
+        ),
+        assert(
+          disposeOnTap == null || onTargetClick != null,
+          "`onTargetClick` is required if you're using `disposeOnTap`",
+        ),
+        assert(
+          onBarrierClick == null || disableBarrierInteraction == false,
+          "can't use `onBarrierClick` & `disableBarrierInteraction` property at same time",
+        ),
+        assert(
+          titleWidget != null || descriptionWidget != null,
+          "`titleWidget` & `descriptionWidget` is required and must not be null",
         );
 
   @override

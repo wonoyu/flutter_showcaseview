@@ -35,11 +35,51 @@ class ToolTipWidget extends StatefulWidget {
     this.descriptionPadding,
     this.titleTextDirection,
     this.descriptionTextDirection,
-  });
+  })  : titleWidget = null,
+        descriptionWidget = null;
+
+  const ToolTipWidget.custom({
+    super.key,
+    required this.titleWidget,
+    required this.descriptionWidget,
+    required this.tooltipBackgroundColor,
+    required this.textColor,
+    required this.showArrow,
+    required this.onTooltipTap,
+    required this.movingAnimationDuration,
+    required this.tooltipActionConfig,
+    required this.tooltipActions,
+    required this.targetPadding,
+    required this.disableMovingAnimation,
+    required this.disableScaleAnimation,
+    required this.tooltipBorderRadius,
+    required this.scaleAnimationDuration,
+    required this.scaleAnimationCurve,
+    required this.toolTipMargin,
+    required this.showcaseController,
+    required this.tooltipPadding,
+    required this.toolTipSlideEndDistance,
+    this.scaleAnimationAlignment,
+    this.tooltipPosition,
+  })  : title = null,
+        titleAlignment = Alignment.center,
+        titlePadding = EdgeInsets.zero,
+        titleTextAlign = TextAlign.center,
+        titleTextDirection = TextDirection.ltr,
+        titleTextStyle = const TextStyle(),
+        description = null,
+        descriptionAlignment = Alignment.center,
+        descriptionTextAlign = TextAlign.center,
+        descriptionTextDirection = TextDirection.ltr,
+        descriptionPadding = EdgeInsets.zero,
+        descTextStyle = const TextStyle(),
+        container = null;
 
   final String? title;
+  final Widget? titleWidget;
   final TextAlign? titleTextAlign;
   final String? description;
+  final Widget? descriptionWidget;
   final TextAlign? descriptionTextAlign;
   final AlignmentGeometry titleAlignment;
   final AlignmentGeometry descriptionAlignment;
@@ -163,8 +203,19 @@ class _ToolTipWidgetState extends State<ToolTipWidget>
                   color: widget.tooltipBackgroundColor,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      if (widget.title != null)
+                      if (widget.titleWidget != null)
+                        Padding(
+                          padding: (widget.titlePadding ?? EdgeInsets.zero).add(
+                            EdgeInsets.only(
+                              left: widget.tooltipPadding?.left ?? 0,
+                              right: widget.tooltipPadding?.right ?? 0,
+                            ),
+                          ),
+                          child: widget.titleWidget!,
+                        )
+                      else if (widget.title != null)
                         DefaultTooltipTextWidget(
                           padding: (widget.titlePadding ?? EdgeInsets.zero).add(
                             EdgeInsets.only(
@@ -184,7 +235,19 @@ class _ToolTipWidgetState extends State<ToolTipWidget>
                                     ),
                                   ),
                         ),
-                      if (widget.description != null)
+                      if (widget.descriptionWidget != null)
+                        Padding(
+                          padding:
+                              (widget.descriptionPadding ?? EdgeInsets.zero)
+                                  .add(
+                            EdgeInsets.only(
+                              left: widget.tooltipPadding?.left ?? 0,
+                              right: widget.tooltipPadding?.right ?? 0,
+                            ),
+                          ),
+                          child: widget.descriptionWidget!,
+                        )
+                      else if (widget.description != null)
                         DefaultTooltipTextWidget(
                           padding:
                               (widget.descriptionPadding ?? EdgeInsets.zero)
@@ -213,6 +276,8 @@ class _ToolTipWidgetState extends State<ToolTipWidget>
                           outsidePadding: EdgeInsets.only(
                             left: widget.tooltipPadding?.left ?? 0,
                             right: widget.tooltipPadding?.right ?? 0,
+                            top: widget
+                                .tooltipActionConfig.gapBetweenContentAndAction,
                           ),
                           alignment: widget.tooltipActionConfig.alignment,
                           crossAxisAlignment:
